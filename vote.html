@@ -1,5 +1,27 @@
 <!DOCTYPE html>
 <html lang="vi">
+<!-- Thêm Firebase SDK -->
+<script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
+<script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-database.js"></script>
+
+<script>
+  // Cấu hình Firebase (thay bằng config của bạn)
+  const firebaseConfig = {
+    apiKey: "AIzaSyCAaYzZez0sTAxDxunKJAaynfCbTTGOwPs",
+    authDomain: "voting-2adc3.firebaseapp.com",
+    databaseURL: "https://voting-2adc3-default-rtdb.firebaseio.com",
+    projectId: "voting-2adc3",
+    storageBucket: "voting-2adc3.firebasestorage.app",
+    messagingSenderId: "427077814697",
+    appId: "1:427077814697:web:c1f6303f49cfdfca1a5cb8",
+    measurementId: "G-E51BL1M8LV"
+    };
+
+  
+  // Khởi tạo Firebase
+  firebase.initializeApp(firebaseConfig);
+  const database = firebase.database();
+</script>
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -134,36 +156,32 @@
         }
         
         function loadVotes() {
-            // Ở đây bạn có thể load dữ liệu từ server hoặc localStorage
-            // Tạm thời để trống, sẽ cập nhật sau
+            database.ref('votes').on('value', (snapshot) => {
+                const votesData = snapshot.val();
+                const allVotes = [];
+                
+                for (const userId in votesData) {
+                    allVotes.push(votesData[userId]);
+                }
+                
+                updateStats(allVotes);
+            });
         }
         
-        function submitVote() {
+        async function submitVote() {
             const selectedDays = Array.from(document.querySelectorAll('.day.selected'))
                 .map(day => day.dataset.day);
             
-            // Lưu vote của người dùng
-            const userVotes = {
-                user: currentUser,
-                votes: selectedDays
-            };
-            
-            // Gửi dữ liệu lên server hoặc lưu vào localStorage
-            // Ở đây tôi sẽ minh họa bằng localStorage
-            let allVotes = JSON.parse(localStorage.getItem('groupVotes') || '[]');
-            
-            // Xóa vote cũ của người này nếu có
-            allVotes = allVotes.filter(vote => vote.user !== currentUser);
-            
-            // Thêm vote mới
-            allVotes.push(userVotes);
-            
-            localStorage.setItem('groupVotes', JSON.stringify(allVotes));
-            
-            // Cập nhật thống kê
-            updateStats(allVotes);
-            
-            alert('Vote của bạn đã được ghi nhận!');
+            try {
+                await database.ref('votes/' + currentUser).set({
+                    user: currentUser,
+                    votes: selectedDays,
+                    timestamp: firebase.database.ServerValue.TIMESTAMP
+                });
+                alert('Vote của bạn đã được ghi nhận!');
+            } catch (error) {
+                alert('Lỗi khi lưu vote: ' + error.message);
+            }
         }
         
             function updateStats(allVotes) {
