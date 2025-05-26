@@ -1,0 +1,52 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Vote Lịch Rảnh - Tháng 6/2025</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        .container {
+            text-align: center;
+        }
+        input {
+            padding: 10px;
+            margin: 10px;
+            width: 300px;
+        }
+        button {
+            padding: 10px 20px;
+            background-color: #4CAF50;
+            color: white;
+            border: none;
+            cursor: pointer;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Vote Lịch Rảnh Nhóm</h1>
+        <h2>Tháng 6/2025</h2>
+        <p>Nhập tên của bạn để bắt đầu vote:</p>
+        <input type="text" id="userName" placeholder="Tên của bạn">
+        <button onclick="startVoting()">Bắt đầu Vote</button>
+    </div>
+
+    <script>
+        function startVoting() {
+            const userName = document.getElementById('userName').value.trim();
+            if (userName) {
+                localStorage.setItem('currentUser', userName);
+                window.location.href = 'vote.html';
+            } else {
+                alert('Vui lòng nhập tên của bạn!');
+            }
+        }
+    </script>
+</body>
+</html>
