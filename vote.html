@@ -1,0 +1,251 @@
+<!DOCTYPE html>
+<html lang="vi">
+<!-- Thêm Firebase SDK -->
+<script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
+<script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-database.js"></script>
+
+<script>
+  // Cấu hình Firebase (thay bằng config của bạn)
+  const firebaseConfig = {
+    apiKey: "AIzaSyCAaYzZez0sTAxDxunKJAaynfCbTTGOwPs",
+    authDomain: "voting-2adc3.firebaseapp.com",
+    databaseURL: "https://voting-2adc3-default-rtdb.firebaseio.com",
+    projectId: "voting-2adc3",
+    storageBucket: "voting-2adc3.firebasestorage.app",
+    messagingSenderId: "427077814697",
+    appId: "1:427077814697:web:c1f6303f49cfdfca1a5cb8",
+    measurementId: "G-E51BL1M8LV"
+    };
+
+  
+  // Khởi tạo Firebase
+  firebase.initializeApp(firebaseConfig);
+  const database = firebase.database();
+</script>
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Vote Ngày Rảnh - Tháng 6/2025</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 1000px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        .calendar {
+            display: grid;
+            grid-template-columns: repeat(7, 1fr);
+            gap: 5px;
+            margin-top: 20px;
+        }
+        .day-header {
+            text-align: center;
+            font-weight: bold;
+            padding: 10px;
+            background-color: #f0f0f0;
+        }
+        .day {
+            border: 1px solid #ddd;
+            padding: 10px;
+            min-height: 80px;
+            cursor: pointer;
+        }
+        .day-number {
+            font-weight: bold;
+            margin-bottom: 5px;
+        }
+        .day.available {
+            background-color: #c8e6c9;
+        }
+        .day.selected {
+            background-color: #81c784;
+        }
+        .stats {
+            margin-top: 30px;
+            padding: 15px;
+            background-color: #f5f5f5;
+            border-radius: 5px;
+        }
+        .high-availability {
+            color: #2e7d32;
+            font-weight: bold;
+        }
+        button {
+            padding: 10px 20px;
+            background-color: #4CAF50;
+            color: white;
+            border: none;
+            cursor: pointer;
+            margin-top: 20px;
+        }
+        .member-list {
+        font-size: 0.9em;
+        color: #555;
+        margin-top: 3px;
+        padding-left: 15px;
+        }
+    </style>
+</head>
+<body>
+    <h1>Vote Ngày Rảnh - Tháng 6/2025</h1>
+    <p>Xin chào, <span id="currentUser"></span>! Chọn các ngày bạn rảnh trong tháng 6:</p>
+    
+    <div class="calendar" id="calendar"></div>
+    
+    <button onclick="submitVote()">Gửi Vote</button>
+    
+    <div class="stats" id="stats">
+        <h3>Thống kê:</h3>
+        <p>Những ngày có trên 55% thành viên rảnh sẽ hiển thị ở đây.</p>
+    </div>
+
+    <script>
+        // Lấy thông tin người dùng
+        const currentUser = localStorage.getItem('currentUser');
+        document.getElementById('currentUser').textContent = currentUser;
+        
+        // Tạo lịch tháng 6/2025
+        const year = 2025;
+        const month = 5; // Tháng 6 (0-11)
+        
+        function createCalendar() {
+            const calendar = document.getElementById('calendar');
+            
+            // Tạo header các ngày trong tuần
+            const daysOfWeek = ['CN', 'T2', 'T3', 'T4', 'T5', 'T6', 'T7'];
+            daysOfWeek.forEach(day => {
+                const dayHeader = document.createElement('div');
+                dayHeader.className = 'day-header';
+                dayHeader.textContent = day;
+                calendar.appendChild(dayHeader);
+            });
+            
+            // Lấy ngày đầu tiên của tháng và số ngày trong tháng
+            const firstDay = new Date(year, month, 1);
+            const lastDay = new Date(year, month + 1, 0);
+            const daysInMonth = lastDay.getDate();
+            
+            // Thêm các ô trống cho các ngày trước ngày đầu tiên của tháng
+            for (let i = 0; i < firstDay.getDay(); i++) {
+                const emptyDay = document.createElement('div');
+                emptyDay.className = 'day empty';
+                calendar.appendChild(emptyDay);
+            }
+            
+            // Tạo các ô ngày trong tháng
+            for (let day = 1; day <= daysInMonth; day++) {
+                const dayElement = document.createElement('div');
+                dayElement.className = 'day';
+                dayElement.dataset.day = day;
+                
+                const dayNumber = document.createElement('div');
+                dayNumber.className = 'day-number';
+                dayNumber.textContent = day;
+                dayElement.appendChild(dayNumber);
+                
+                dayElement.addEventListener('click', function() {
+                    this.classList.toggle('selected');
+                });
+                
+                calendar.appendChild(dayElement);
+            }
+            
+            // Load dữ liệu vote đã có (nếu có)
+            loadVotes();
+        }
+        
+        function loadVotes() {
+            database.ref('votes').on('value', (snapshot) => {
+                const votesData = snapshot.val();
+                const allVotes = [];
+                
+                for (const userId in votesData) {
+                    allVotes.push(votesData[userId]);
+                }
+                
+                updateStats(allVotes);
+            });
+        }
+        
+        async function submitVote() {
+            const selectedDays = Array.from(document.querySelectorAll('.day.selected'))
+                .map(day => day.dataset.day);
+            
+            try {
+                await database.ref('votes/' + currentUser).set({
+                    user: currentUser,
+                    votes: selectedDays,
+                    timestamp: firebase.database.ServerValue.TIMESTAMP
+                });
+                alert('Vote của bạn đã được ghi nhận!');
+            } catch (error) {
+                alert('Lỗi khi lưu vote: ' + error.message);
+            }
+        }
+        
+            function updateStats(allVotes) {
+        const statsElement = document.getElementById('stats');
+        const totalMembers = allVotes.length;
+        
+        if (totalMembers === 0) {
+            statsElement.innerHTML = '<h3>Thống kê:</h3><p>Chưa có dữ liệu vote.</p>';
+            return;
+        }
+        
+        // Đếm số vote và ghi nhận thành viên cho mỗi ngày
+        const dayStats = {};
+        for (let day = 1; day <= 30; day++) {
+            dayStats[day] = {
+                count: 0,
+                members: []
+            };
+        }
+        
+        allVotes.forEach(userVotes => {
+            userVotes.votes.forEach(day => {
+                dayStats[day].count++;
+                dayStats[day].members.push(userVotes.user);
+            });
+        });
+        
+        // Tìm các ngày có trên 75% thành viên rảnh
+        const highAvailabilityDays = [];
+        for (const [day, stats] of Object.entries(dayStats)) {
+            const percentage = (stats.count / totalMembers) * 100;
+            if (percentage > 55) {
+                highAvailabilityDays.push({
+                    day: day,
+                    percentage: percentage.toFixed(0),
+                    members: stats.members
+                });
+            }
+        }
+        
+        // Hiển thị kết quả chi tiết
+        let statsHTML = '<h3>Thống kê:</h3>';
+        
+        if (highAvailabilityDays.length > 0) {
+            statsHTML += '<p>Những ngày có trên 55% thành viên rảnh:</p><ul>';
+            highAvailabilityDays.forEach(dayInfo => {
+                statsHTML += `
+                    <li>
+                        <strong>Ngày ${dayInfo.day}</strong>: 
+                        <span class="high-availability">${dayInfo.percentage}%</span> thành viên rảnh
+                        <div class="member-list">(${dayInfo.members.join(', ')})</div>
+                    </li>`;
+            });
+            statsHTML += '</ul>';
+        } else {
+            statsHTML += '<p>Chưa có ngày nào đạt trên 55% thành viên rảnh.</p>';
+        }
+        
+        statsHTML += `<p>Tổng số thành viên đã vote: ${totalMembers}</p>`;
+        
+        statsElement.innerHTML = statsHTML;
+    }
+        // Khởi tạo lịch
+        createCalendar();
+    </script>
+</body>
+</html>
