@@ -213,7 +213,7 @@
         const highAvailabilityDays = [];
         for (const [day, stats] of Object.entries(dayStats)) {
             const percentage = (stats.count / totalMembers) * 100;
-            if (percentage > 75) {
+            if (percentage > 55) {
                 highAvailabilityDays.push({
                     day: day,
                     percentage: percentage.toFixed(0),
@@ -226,7 +226,7 @@
         let statsHTML = '<h3>Thống kê:</h3>';
         
         if (highAvailabilityDays.length > 0) {
-            statsHTML += '<p>Những ngày có trên 75% thành viên rảnh:</p><ul>';
+            statsHTML += '<p>Những ngày có trên 55% thành viên rảnh:</p><ul>';
             highAvailabilityDays.forEach(dayInfo => {
                 statsHTML += `
                     <li>
